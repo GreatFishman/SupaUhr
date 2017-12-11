@@ -22,6 +22,18 @@
 // create our matrix based on matrix definition
 cLEDMatrix<MATRIX_WIDTH, MATRIX_HEIGHT, MATRIX_TYPE> ledmatrix;
 
+class LEDGFX : public FastLED_GFX {
+  public:
+    LEDGFX() : FastLED_GFX(MATRIX_WIDTH, MATRIX_HEIGHT) {
+    }
+
+    void drawPixel(int16_t x, int16_t y, CRGB color) {
+      ledmatrix[x][y] = color;
+    }
+};
+
+LEDGFX gfx;
+
 //NTPClient ntp;
 //HTTPFrontend httpfrontend;
 //WeatherClient weather;
@@ -207,20 +219,10 @@ void timeToLEDS(uint8_t hour, uint8_t minute)
 
 void setup()
 {
-  LEDS.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(ledmatrix[0],   ledmatrix.Size(),                   MATRIX_WIDTH*MATRIX_HEIGHT);
+  LEDS.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(ledmatrix[0],   ledmatrix.Size());
   //LEDS.addLeds<WS2812B, 5, RGB>(leds,         MATRIX_WIDTH*MATRIX_HEIGHT, 9                         );
   FastLED.setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(10);
-  FastLED.clear(true);
-  delay(500);
-  FastLED.showColor(CRGB::Red);
-  delay(1000);
-  FastLED.showColor(CRGB::Lime);
-  delay(1000);
-  FastLED.showColor(CRGB::Blue);
-  delay(1000);
-  FastLED.showColor(CRGB::White);
-  delay(1000);
   FastLED.clear(true);
 
   Serial.begin(9600);
@@ -337,7 +339,11 @@ int16_t counter = 0;
 
 void loop()
 {
-  int16_t sx, sy, x, y;
+  gfx.fillScreen(CRGB::Red);
+  FastLED.show();
+  delay(500);
+  
+  /*int16_t sx, sy, x, y;
   uint8_t h;
 
   FastLED.clear();
@@ -386,6 +392,6 @@ void loop()
 
   counter++;
   if (counter >= 2250)
-    counter = 0;
+    counter = 0;*/
   FastLED.show();
 }
