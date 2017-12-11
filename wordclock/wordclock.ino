@@ -5,10 +5,22 @@
 
 #include <stdint.h>
 #include <FastLED.h>
+#include <FastLED_GFX.h>
+#include <LEDMatrix.h>
 //#include <TimeLib.h>
 
-const uint8_t kMatrixWidth = 11;
-const uint8_t kMatrixHeight = 10;
+// declare FastLED (matrix / LED strip)
+#define LED_PIN        5
+#define COLOR_ORDER    GRB
+#define CHIPSET        WS2812B
+
+// declare matrix
+#define MATRIX_WIDTH   11 // width of matrix
+#define MATRIX_HEIGHT  10 // height of matrix
+#define MATRIX_TYPE    HORIZONTAL_ZIGZAG_MATRIX
+
+// create our matrix based on matrix definition
+cLEDMatrix<MATRIX_WIDTH, MATRIX_HEIGHT, MATRIX_TYPE> ledmatrix;
 
 //NTPClient ntp;
 //HTTPFrontend httpfrontend;
@@ -18,16 +30,16 @@ const char* ssid = "UPC9DAE7BA";
 const char* password = "WNmtdcw6n6zh";
 
 
-#define NUM_LEDS (kMatrixWidth * kMatrixHeight) + 9
+#define NUM_LEDS (MATRIX_WIDTH * MATRIX_HEIGHT) + 9
 
 // The leds
 CRGB leds[NUM_LEDS];
 
-const int SNOW_LED = kMatrixWidth * kMatrixHeight + 5 - 1;
-const int RAIN_LED = kMatrixWidth * kMatrixHeight + 6 - 1;
-const int SUN_LED = kMatrixWidth * kMatrixHeight + 7 - 1;
-const int CLOUD_LED = kMatrixWidth * kMatrixHeight + 8 - 1;
-const int MIST_LED = kMatrixWidth * kMatrixHeight + 9 - 1;
+const int SNOW_LED = (MATRIX_WIDTH * MATRIX_HEIGHT) + 5 - 1;
+const int RAIN_LED = (MATRIX_WIDTH * MATRIX_HEIGHT) + 6 - 1;
+const int SUN_LED = (MATRIX_WIDTH * MATRIX_HEIGHT) + 7 - 1;
+const int CLOUD_LED = (MATRIX_WIDTH * MATRIX_HEIGHT) + 8 - 1;
+const int MIST_LED = (MATRIX_WIDTH * MATRIX_HEIGHT) + 9 - 1;
 
 // convert xy coordinates to index
 uint16_t XY( uint8_t x, uint8_t y)
@@ -38,15 +50,16 @@ uint16_t XY( uint8_t x, uint8_t y)
     offset += 1;
 
   if(y % 2 == 0)
-    return y * (kMatrixWidth) + x - offset;
+    return y * (MATRIX_WIDTH) + x - offset;
   else
-    return y * (kMatrixWidth) + (kMatrixWidth-1-x) - offset;
+    return y * (MATRIX_WIDTH) + (MATRIX_WIDTH-1-x) - offset;
 }
 
 void setLEDs(const int pleds[])
 {
   for(int i = 0; i < pleds[0]; i++)
-    leds[pleds[i+1]] = CRGB::White;
+    //leds[pleds[i+1]].setRGB(random8(),random8(),random8());
+    ledmatrix[pleds[i+1]]->setRGB(255, 255, 255);
 }
 
 #include "definitions.h"
@@ -57,11 +70,11 @@ void timeToLEDS(uint8_t hour, uint8_t minute)
     leds[i] = CRGB::Black;
 
   // ES IST
-  leds[XY(0, 0)] = CRGB::White;
-  leds[XY(1, 0)] = CRGB::White;
-  leds[XY(3, 0)] = CRGB::White;
-  leds[XY(4, 0)] = CRGB::White;
-  leds[XY(5, 0)] = CRGB::White;
+  ledmatrix[0][0] = CRGB::White;
+  ledmatrix[1][0] = CRGB::White;
+  ledmatrix[3][0] = CRGB::White;
+  ledmatrix[4][0] = CRGB::White;
+  ledmatrix[5][0] = CRGB::White;
 
   if(minute >= 25)
     hour++;
@@ -71,7 +84,7 @@ void timeToLEDS(uint8_t hour, uint8_t minute)
   int fivestep = minute / 5;
 
   for(int i = 1; i <= minute % 5; i++)
-    leds[XY(0, 9) + i] = CRGB::White;
+    leds[MATRIX_HEIGHT * MATRIX_WIDTH + i] = CRGB::White;
 
   switch(hour) {
     case 0:
@@ -194,29 +207,43 @@ void timeToLEDS(uint8_t hour, uint8_t minute)
 
 void setup()
 {
-  LEDS.addLeds<WS2812B, 5, RGB>(leds, NUM_LEDS);
-  LEDS.setBrightness(10);
+  LEDS.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(ledmatrix[0],   ledmatrix.Size(),                   MATRIX_WIDTH*MATRIX_HEIGHT);
+  //LEDS.addLeds<WS2812B, 5, RGB>(leds,         MATRIX_WIDTH*MATRIX_HEIGHT, 9                         );
+  FastLED.setCorrection(TypicalLEDStrip);
+  FastLED.setBrightness(10);
+  FastLED.clear(true);
+  delay(500);
+  FastLED.showColor(CRGB::Red);
+  delay(1000);
+  FastLED.showColor(CRGB::Lime);
+  delay(1000);
+  FastLED.showColor(CRGB::Blue);
+  delay(1000);
+  FastLED.showColor(CRGB::White);
+  delay(1000);
   FastLED.clear(true);
 
   Serial.begin(9600);
-
-  //Serial.println();
-  //Serial.println();
 
   // We start by connecting to a WiFi network
   //Serial.print("Connecting to ");
   //Serial.print(ssid);
 
-  //while(true)
-  //{
-    for(int i = 0; i < NUM_LEDS/2; i++)
-    {
-      delay(10);
-      leds[i] = CRGB::Aqua;
-      FastLED.show();
-    }
-    FastLED.clear();
-  //}
+  // Boot animation (just for fun :))
+  /*for(int i = 0; i < NUM_LEDS; i++)
+  {
+    delay(10);
+    ledmatrix[0][0],setRGB(random8(),random8(),random8());
+    FastLED.show();
+  }
+  for(int i = 0; i < NUM_LEDS; i++)
+  {
+    delay(10);
+    ledmatrix[i]->setRGB(0, 0, 0);
+    FastLED.show();
+  }
+  delay(1000);
+  FastLED.clear();*/
   /*WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -274,11 +301,11 @@ void setup()
 
   //timeToLEDS((epoch  % 86400L) / 3600, (epoch  % 3600) / 60);
 
-  int h = 18;
+  int h = 19;
   int m = 11;
   bool on = false;
 
-  while(true)
+  /*while(true)
   {
     timeToLEDS(h, m);
 
@@ -288,20 +315,77 @@ void setup()
 
     for(int i = 0; i < 60; i++)
     {
-      leds[XY(10,9)] = on ? CRGB::Black : CRGB::Red;
+      ledmatrix[10][9] = on ? CRGB::Black : CRGB::Red;
       on = !on;
       FastLED.show();
       delay(1000);
     }
     
     //timeToLEDS(10, 30);
-  }
+  }*/
 
   //httpfrontend.start();
 }
 
-void loop()
+/*void loop()
 {
   //httpfrontend.checkAvailable();
-}
+}*/
 
+uint8_t hue = 0;
+int16_t counter = 0;
+
+void loop()
+{
+  int16_t sx, sy, x, y;
+  uint8_t h;
+
+  FastLED.clear();
+
+  h = hue;
+  if (counter < 1125)
+  {
+    // ** Fill LED's with diagonal stripes
+    for (x=0; x<(ledmatrix.Width()+ledmatrix.Height()); ++x)
+    {
+      ledmatrix.DrawLine(x - ledmatrix.Height(), ledmatrix.Height() - 1, x, 0, CHSV(h, 255, 255));
+      h+=16;
+    }
+  }
+  else
+  {
+    // ** Fill LED's with horizontal stripes
+    for (y=0; y<ledmatrix.Height(); ++y)
+    {
+      ledmatrix.DrawLine(0, y, ledmatrix.Width() - 1, y, CHSV(h, 255, 255));
+      h+=16;
+    }
+  }
+  hue+=4;
+
+  if (counter < 125)
+    ;
+  else if (counter < 375)
+    ledmatrix.HorizontalMirror();
+  else if (counter < 625)
+    ledmatrix.VerticalMirror();
+  else if (counter < 875)
+    ledmatrix.QuadrantMirror();
+  else if (counter < 1125)
+    ledmatrix.QuadrantRotateMirror();
+  else if (counter < 1250)
+    ;
+  else if (counter < 1500)
+    ledmatrix.TriangleTopMirror();
+  else if (counter < 1750)
+    ledmatrix.TriangleBottomMirror();
+  else if (counter < 2000)
+    ledmatrix.QuadrantTopTriangleMirror();
+  else if (counter < 2250)
+    ledmatrix.QuadrantBottomTriangleMirror();
+
+  counter++;
+  if (counter >= 2250)
+    counter = 0;
+  FastLED.show();
+}
