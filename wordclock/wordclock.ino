@@ -1,3 +1,5 @@
+#include <TimerOne.h>
+
 //#include <ESP8266WiFi.h>
 //#include "ntpclient.h"
 //#include "httpfrontend.h"
@@ -16,7 +18,7 @@
 
 // declare matrix
 #define MATRIX_WIDTH   11 // width of matrix
-#define MATRIX_HEIGHT  10 // height of matrix
+#define MATRIX_HEIGHT  11 // height of matrix
 #define MATRIX_TYPE    HORIZONTAL_ZIGZAG_MATRIX
 
 // create our matrix based on matrix definition
@@ -53,20 +55,6 @@ const int SUN_LED = (MATRIX_WIDTH * MATRIX_HEIGHT) + 7 - 1;
 const int CLOUD_LED = (MATRIX_WIDTH * MATRIX_HEIGHT) + 8 - 1;
 const int MIST_LED = (MATRIX_WIDTH * MATRIX_HEIGHT) + 9 - 1;
 
-// convert xy coordinates to index
-uint16_t XY( uint8_t x, uint8_t y)
-{
-  uint16_t offset = 0;
-
-  if(y >= 9 && x <= 5)
-    offset += 1;
-
-  if(y % 2 == 0)
-    return y * (MATRIX_WIDTH) + x - offset;
-  else
-    return y * (MATRIX_WIDTH) + (MATRIX_WIDTH-1-x) - offset;
-}
-
 void setLEDs(const int pleds[])
 {
   for(int i = 0; i < pleds[0]; i++)
@@ -78,8 +66,7 @@ void setLEDs(const int pleds[])
 
 void timeToLEDS(uint8_t hour, uint8_t minute)
 {
-  for(int i = 0; i < NUM_LEDS; i++)
-    leds[i] = CRGB::Black;
+  FastLED.clear(false);
 
   // ES IST
   ledmatrix[0][0] = CRGB::White;
@@ -95,8 +82,8 @@ void timeToLEDS(uint8_t hour, uint8_t minute)
 
   int fivestep = minute / 5;
 
-  for(int i = 1; i <= minute % 5; i++)
-    leds[MATRIX_HEIGHT * MATRIX_WIDTH + i] = CRGB::White;
+  for(int i = 0; i < minute % 5; i++)
+    ledmatrix[(MATRIX_HEIGHT-1) * MATRIX_WIDTH + i]->setRGB(255, 255, 255);
 
   switch(hour) {
     case 0:
@@ -217,36 +204,66 @@ void timeToLEDS(uint8_t hour, uint8_t minute)
   FastLED.show();
 }
 
+int seconds = 0;
+int minutes = 0;
+int hours = 0;
+bool on = false;
+bool allowUpdate = true;
+
+void updateTime()
+{
+  if(!allowUpdate)
+    return;
+  
+  seconds = (seconds+30)%60;
+  if(seconds == 0)
+  {
+    minutes = (minutes+1)%60;
+    if(minutes == 0)
+      hours = (hours+1)%24;
+  }
+  
+  timeToLEDS(hours, minutes);
+
+  ledmatrix[XY(10, 9)]->setRGB(on ? 0 : 255, 0 , 0);
+  on = !on;
+
+  FastLED.show();
+}
+
 void setup()
 {
+  FastLED.clear();
+  
   LEDS.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(ledmatrix[0],   ledmatrix.Size());
   //LEDS.addLeds<WS2812B, 5, RGB>(leds,         MATRIX_WIDTH*MATRIX_HEIGHT, 9                         );
   FastLED.setCorrection(TypicalLEDStrip);
-  FastLED.setBrightness(10);
+  FastLED.setBrightness(64);
   FastLED.clear(true);
 
   Serial.begin(9600);
+
+  // every second
+  Timer1.initialize(1000000);
+  Timer1.attachInterrupt(updateTime);
 
   // We start by connecting to a WiFi network
   //Serial.print("Connecting to ");
   //Serial.print(ssid);
 
-  // Boot animation (just for fun :))
-  /*for(int i = 0; i < NUM_LEDS; i++)
+  /*while(true)
   {
-    delay(10);
-    ledmatrix[0][0],setRGB(random8(),random8(),random8());
-    FastLED.show();
-  }
-  for(int i = 0; i < NUM_LEDS; i++)
-  {
-    delay(10);
-    ledmatrix[i]->setRGB(0, 0, 0);
-    FastLED.show();
-  }
-  delay(1000);
-  FastLED.clear();*/
-  /*WiFi.begin(ssid, password);
+    for(int i = 0; i < ledmatrix.Size(); i++)
+    {
+      delay(10);
+      *ledmatrix[i] = CRGB::Aqua;
+      FastLED.show();
+    }
+    FastLED.clear();
+  }*/
+
+  /*   
+  WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(250);
@@ -255,10 +272,9 @@ void setup()
   Serial.println("");
 
   Serial.print("WiFi connected via ");
-  Serial.println(WiFi.localIP());*/
-
-  //circlesnake(0);
-
+  Serial.println(WiFi.localIP());  
+  */
+  
   //int id = weather.weatherId();
   //int id = 500;
 
@@ -298,34 +314,6 @@ void setup()
 
   FastLED.show();*/
 
-  //unsigned long epoch = ntp.getTime();
-  int epoch = 1513008798;
-
-  //timeToLEDS((epoch  % 86400L) / 3600, (epoch  % 3600) / 60);
-
-  int h = 19;
-  int m = 11;
-  bool on = false;
-
-  /*while(true)
-  {
-    timeToLEDS(h, m);
-
-    m = (m+1)%60;
-    if(m == 0)
-      h = (h+1)%12;
-
-    for(int i = 0; i < 60; i++)
-    {
-      ledmatrix[10][9] = on ? CRGB::Black : CRGB::Red;
-      on = !on;
-      FastLED.show();
-      delay(1000);
-    }
-    
-    //timeToLEDS(10, 30);
-  }*/
-
   //httpfrontend.start();
 }
 
@@ -339,11 +327,10 @@ int16_t counter = 0;
 
 void loop()
 {
-  gfx.fillScreen(CRGB::Red);
-  FastLED.show();
-  delay(500);
+  if(allowUpdate)
+    return;
   
-  /*int16_t sx, sy, x, y;
+  int16_t sx, sy, x, y;
   uint8_t h;
 
   FastLED.clear();
@@ -392,6 +379,6 @@ void loop()
 
   counter++;
   if (counter >= 2250)
-    counter = 0;*/
+    counter = 0;
   FastLED.show();
 }
