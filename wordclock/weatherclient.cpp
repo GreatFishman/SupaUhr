@@ -10,7 +10,7 @@ int WeatherClient::weatherId()
   
   HttpClient http(client);
 
-  Serial.print("Requesting weather from ");
+  Serial.print("[Weather] Requesting weather from ");
   Serial.println("api.openweathermap.org");
 
   err = http.get("api.openweathermap.org", "/data/2.5/weather?q=Aachen&appid=459699ef8b14853ecc2dfd27453ab408");
@@ -24,27 +24,23 @@ int WeatherClient::weatherId()
   int statusCode = http.responseStatusCode();
   if (statusCode < 0)
   {
-    Serial.print("Getting response failed: ");
+    Serial.print("[Weather] Getting response failed: ");
     Serial.println(statusCode);
     return -1;
   }
 
-  Serial.print("Got status code: ");
+  Serial.print("[Weather] Got status code: ");
   Serial.println(statusCode);
 
   err = http.skipResponseHeaders();
   if(err < 0)
   {
-    Serial.print("Skipping header failed: ");
+    Serial.print("[Weather] Skipping header failed: ");
     Serial.println(err);
     return -1;
   } 
   
   int bodyLen = http.contentLength();
-  Serial.print("Content length is: ");
-  Serial.println(bodyLen);
-  Serial.println();
-  Serial.println("Body returned follows:");
 
   // Now we've got to the body, so we can print it out
   unsigned long timeoutStart = millis();
@@ -75,7 +71,7 @@ int WeatherClient::weatherId()
   StaticJsonBuffer<1024> jsonBuffer;
   JsonObject& parsed = jsonBuffer.parseObject(bodyBuffer);  
 
-  Serial.print("Weather is: ");
+  Serial.print("[Weather] Weather is: ");
   Serial.println(parsed["weather"][0]["description"].as<const char*>());
 
   return parsed["weather"][0]["id"].as<int>();
