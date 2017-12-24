@@ -25,7 +25,7 @@ class HTTPFrontend
     std::unique_ptr<DNSServer>        dnsServer;
     std::unique_ptr<ESP8266WebServer> server;
     
-    String location = "";
+    String location = "Geilenkirchen";
     bool locationDirty = false;
 
     void handleRoot();

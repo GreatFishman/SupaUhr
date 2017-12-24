@@ -305,6 +305,8 @@ void setup()
   });
   ArduinoOTA.begin();
 
+  weatherId = weather.of(httpfrontend.getLocation());
+
   httpfrontend.start();
 }
 
@@ -358,12 +360,13 @@ void render(int delta)
 
   if (minute() != oldMinute)
   {
+    oldMinute = minute();
     minuteCount++;
     if (minuteCount == updateWeatherEvery)
     {
       weatherId = weather.of(httpfrontend.getLocation());
       minuteCount = 0;
-    }
+    }    
   }
 
   renderWeather();
