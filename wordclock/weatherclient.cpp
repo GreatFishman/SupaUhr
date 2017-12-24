@@ -4,77 +4,41 @@ char* WeatherClient::condition()
 {
 }
 
-int WeatherClient::weatherId()
+int WeatherClient::of(String location)
 {  
-  int err = 0;
-  
-  HttpClient http(client);
+  int httpCode = 0;
+
+  HTTPClient http;  //Declare an object of class HTTPClient
 
   Serial.print("[Weather] Requesting weather from ");
-  Serial.println("api.openweathermap.org");
+  Serial.print("api.openweathermap.org");
 
-  err = http.get("api.openweathermap.org", "/data/2.5/weather?q=Aachen&appid=459699ef8b14853ecc2dfd27453ab408");
-  if (err)
+  String query = "/data/2.5/weather?q=" + location + "&appid=459699ef8b14853ecc2dfd27453ab408";
+
+  Serial.println(query);
+
+  http.begin("api.openweathermap.org", 80, "/data/2.5/weather?q=" + location + "&appid=459699ef8b14853ecc2dfd27453ab408");
+
+  httpCode = http.GET();
+  if (httpCode <= 0)
   {
-    Serial.print("Error while HTTP GET: ");
-    Serial.println(err);
+    Serial.print("[Weather] http.GET(): ");
+    Serial.println(httpCode);
     return -1;
   }
 
-  int statusCode = http.responseStatusCode();
-  if (statusCode < 0)
-  {
-    Serial.print("[Weather] Getting response failed: ");
-    Serial.println(statusCode);
-    return -1;
-  }
+  String payload = http.getString();   
 
-  Serial.print("[Weather] Got status code: ");
-  Serial.println(statusCode);
+  StaticJsonBuffer<2048> jsonBuffer;
+  JsonObject& parsed = jsonBuffer.parseObject(payload.c_str());  
 
-  err = http.skipResponseHeaders();
-  if(err < 0)
-  {
-    Serial.print("[Weather] Skipping header failed: ");
-    Serial.println(err);
-    return -1;
-  } 
-  
-  int bodyLen = http.contentLength();
-
-  // Now we've got to the body, so we can print it out
-  unsigned long timeoutStart = millis();
-  char c;
-  char* bodyBuffer = (char*)malloc(bodyLen+32);
-  int pos = 0;
-  // Whilst we haven't timed out & haven't reached the end of the body
-  while ( (http.connected() || http.available()) &&
-       ((millis() - timeoutStart) < 30*1000) )
-  {
-    if (http.available())
-    {
-      bodyBuffer[pos++] = http.read();      
-      // We read something, reset the timeout counter
-      timeoutStart = millis();
-    }
-    else
-    {
-      // We haven't got any data, so let's pause to allow some to
-      // arrive
-      delay(1000);
-    }
-  }
-  bodyBuffer[pos] = '\0';
-
-  Serial.println();
-
-  StaticJsonBuffer<1024> jsonBuffer;
-  JsonObject& parsed = jsonBuffer.parseObject(bodyBuffer);  
+  Serial.println(payload);
 
   Serial.print("[Weather] Weather is: ");
   Serial.println(parsed["weather"][0]["description"].as<const char*>());
 
-  return parsed["weather"][0]["id"].as<int>();
+  cached = parsed["weather"][0]["id"].as<int>();
+  return cached;
 }
 
 

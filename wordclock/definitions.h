@@ -1,3 +1,16 @@
+// convert xy coordinates to index
+uint16_t XY( uint8_t x, uint8_t y)
+{
+  // initally used to ignore a dead pixel,
+  // probably not necessary anymore
+  uint16_t offset = 0;
+  
+  if(y % 2 == 0)
+    return y * (MATRIX_WIDTH) + x - offset;
+  else
+    return y * (MATRIX_WIDTH) + (MATRIX_WIDTH-1-x) - offset;
+}
+
 const int EIN[4] = {
     3,
     XY(2, 4),
