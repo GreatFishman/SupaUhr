@@ -1,6 +1,6 @@
-#include <ESP8266HTTPClient.h>
+#include <HTTPClient.h>
 #include <ArduinoJson.h>
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 #include <WiFiUdp.h>
 
 class WeatherClient
@@ -25,5 +25,3 @@ class WeatherClient
     // A UDP instance to let us send and receive packets over UDP
     WiFiClient client;    
 };
-
-

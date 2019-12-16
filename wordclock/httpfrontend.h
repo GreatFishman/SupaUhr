@@ -1,6 +1,11 @@
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
+#include <WiFi.h>
 #include <DNSServer.h>
+#if defined(ESP8266)
+#include <ESP8266WebServer.h>
+#else
+#include <WebServer.h>
+#endif
+#include <WiFiManager.h>
 
 void updateLocation();
 
@@ -23,7 +28,7 @@ class HTTPFrontend
 
   private:
     std::unique_ptr<DNSServer>        dnsServer;
-    std::unique_ptr<ESP8266WebServer> server;
+    std::unique_ptr<WebServer> server;
     
     String location = "Geilenkirchen";
     bool locationDirty = false;
@@ -35,5 +40,3 @@ class HTTPFrontend
 
     void connectTo(String ssid, String password);
 };
-
-

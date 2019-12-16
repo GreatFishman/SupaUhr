@@ -38,7 +38,7 @@ void HTTPFrontend::start()
   Serial.print("[HTTPFrontend] AP IP address: ");
   Serial.println(myIP);*/
   dnsServer.reset(new DNSServer());
-  server.reset(new ESP8266WebServer(80));
+  server.reset(new WebServer(80));
 
   dnsServer->setErrorReplyCode(DNSReplyCode::NoError);
   dnsServer->start(53, "word.clock", WiFi.localIP());
@@ -210,5 +210,3 @@ void HTTPFrontend::connectTo(String ssid, String password)
 
   WiFi.printDiag(Serial);
 }
-
-

@@ -5,7 +5,7 @@ char* WeatherClient::condition()
 }
 
 int WeatherClient::of(String location)
-{  
+{
   int httpCode = 0;
 
   HTTPClient http;  //Declare an object of class HTTPClient
@@ -27,18 +27,16 @@ int WeatherClient::of(String location)
     return -1;
   }
 
-  String payload = http.getString();   
+  String payload = http.getString();
 
-  StaticJsonBuffer<2048> jsonBuffer;
-  JsonObject& parsed = jsonBuffer.parseObject(payload.c_str());  
+  StaticJsonDocument<2048> jsonDoc;
+  deserializeJson(jsonDoc, payload.c_str());
 
   Serial.println(payload);
 
   Serial.print("[Weather] Weather is: ");
-  Serial.println(parsed["weather"][0]["description"].as<const char*>());
+  Serial.println(jsonDoc["weather"][0]["description"].as<const char*>());
 
-  cached = parsed["weather"][0]["id"].as<int>();
+  cached = jsonDoc["weather"][0]["id"].as<int>();
   return cached;
 }
-
-
